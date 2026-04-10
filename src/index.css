@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&family=Space+Grotesk:wght@700&family=Playfair+Display:wght@900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "Space Grotesk", monospace;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-pizza-red: #E31837;
+  --color-pizza-orange: #FF5C00;
+  --color-pizza-dark: #0A0A0A;
+  --color-pizza-card: #161616;
+  --color-pizza-cream: #0A0A0A;
+  --color-pizza-cheese: #FFC700;
+  --color-pizza-text: #FFFFFF;
+  --color-pizza-muted: #888888;
+  
+  --color-chocolate: #0A0A0A;
+  --color-beige: #161616;
+}
+
+@layer base {
+  body {
+    @apply bg-pizza-dark text-pizza-text font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .text-shadow-premium {
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+
+  .glass-morphism {
+    @apply bg-pizza-card/80 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+
+  .premium-card-shadow {
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+  }
+
+  .premium-button-shadow {
+    box-shadow: 0 8px 24px -6px rgba(227, 24, 55, 0.4);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

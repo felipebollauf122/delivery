@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - description: string (optional)
+    //   - price: number (required, positive)
+    //   - image: string (optional, URL)
+    //   - category: string (required)
+    //   - createdAt: timestamp (optional)
+    //
+    // Collection: categories
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //
+    // Collection: users
+    // Document ID: auth.uid
+    // Fields:
+    //   - email: string (required)
+    //   - role: string (required, 'admin' or 'user')
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (('email' in request.auth.token && request.auth.token.email.lower() == "enrrik98765432@gmail.com") ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidProduct(data) {
+      return hasRequiredFields(['name', 'price', 'category']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             (!('image' in data) || (data.image is string && data.image.size() < 1000));
+    }
+
+    function isValidCategory(data) {
+      return hasRequiredFields(['name']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 50;
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['email', 'role']) &&
+             data.email is string && data.role in ['admin', 'user'];
+    }
+
+    function isValidTestimonial(data) {
+      return hasRequiredFields(['name', 'rating', 'comment']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() > 0 && data.comment.size() < 1000 &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() < 1000));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /products/{productId} {
+      allow read: if true; // Public catalog
+      allow create: if isAdmin() && isValidProduct(request.resource.data);
+      allow update: if isAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true; // Public categories
+      allow create: if isAdmin() && isValidCategory(request.resource.data);
+      allow update: if isAdmin() && isValidCategory(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'user' || ('email' in request.auth.token && request.auth.token.email.lower() == "enrrik98765432@gmail.com" && request.resource.data.role == 'admin'));
+      allow update: if isAdmin() && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && request.auth.token.email.lower() == "enrrik98765432@gmail.com");
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTestimonial(request.resource.data);
+      allow update: if isAdmin() && isValidTestimonial(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /test/{docId} {
+      allow read: if true;
+    }
+  }
+}
