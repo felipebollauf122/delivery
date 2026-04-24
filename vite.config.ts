@@ -4,12 +4,20 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const apiTarget = env.API_PROXY_TARGET || 'http://localhost:3001';
+  const apiTarget = env.API_PROXY_TARGET || 'http://localhost:3002';
 
   return {
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    define: {},
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+            motion: ['motion/react'],
+          },
+        },
+      },
     },
     server: {
       port: 5173,

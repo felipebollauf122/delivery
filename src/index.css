@@ -1,34 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&family=Space+Grotesk:wght@700&family=Playfair+Display:wght@900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=JetBrains+Mono:wght@500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", sans-serif;
-  --font-mono: "Space Grotesk", monospace;
-  --font-serif: "Playfair Display", serif;
-  
-  --color-pizza-red: #E31837;
-  --color-pizza-orange: #FF5C00;
-  --color-pizza-dark: #0A0A0A;
-  --color-pizza-card: #161616;
-  --color-pizza-cream: #0A0A0A;
-  --color-pizza-cheese: #FFC700;
-  --color-pizza-text: #FFFFFF;
-  --color-pizza-muted: #888888;
-  
-  --color-chocolate: #0A0A0A;
-  --color-beige: #161616;
+  /* Display = Bebas Neue (street grill signage). Body = Fraunces (editorial serif). Mono = JetBrains for price tags. */
+  --font-sans: "Fraunces", ui-serif, Georgia, serif;
+  --font-display: "Bebas Neue", "Impact", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-serif: "Fraunces", Georgia, serif;
+
+  /* Burger house palette — charcoal base, burnt red, acid mustard */
+  --color-pizza-red: #E0261A;          /* burnt red / ketchup accent */
+  --color-pizza-orange: #FFB300;       /* mustard acid — hover/CTA highlight */
+  --color-pizza-dark: #0B0B0A;         /* true charcoal w/ warm undertone */
+  --color-pizza-card: #151412;         /* card bg, slightly warmer than pure black */
+  --color-pizza-cream: #F5EFE2;        /* warm paper cream for contrast surfaces */
+  --color-pizza-cheese: #F5C518;       /* aged cheddar yellow for tag accents */
+  --color-pizza-text: #F5EFE2;         /* warm off-white body text */
+  --color-pizza-muted: #8A827A;        /* warm muted for secondary text */
+
+  --color-chocolate: #0B0B0A;
+  --color-beige: #151412;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-pizza-dark text-pizza-text font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(224, 38, 26, 0.18), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 197, 24, 0.08), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Headings get the Bebas neue treatment with tight tracking */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+
+  /* Tabular numbers on price tags */
+  .font-mono {
+    font-feature-settings: "tnum" 1, "ss01" 1;
   }
 }
 
 @layer utilities {
   .text-shadow-premium {
-    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   }
 
   .glass-morphism {
@@ -36,18 +68,113 @@
   }
 
   .premium-card-shadow {
-    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+    box-shadow:
+      0 1px 0 rgba(245, 239, 226, 0.04) inset,
+      0 20px 60px -20px rgba(0, 0, 0, 0.8),
+      0 4px 16px -4px rgba(224, 38, 26, 0.15);
   }
 
   .premium-button-shadow {
-    box-shadow: 0 8px 24px -6px rgba(227, 24, 55, 0.4);
+    box-shadow:
+      0 6px 0 0 #8C1309,
+      0 10px 24px -6px rgba(224, 38, 26, 0.55);
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .premium-button-shadow:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 0 0 #8C1309,
+      0 16px 32px -6px rgba(224, 38, 26, 0.65);
+  }
+  .premium-button-shadow:active {
+    transform: translateY(3px);
+    box-shadow:
+      0 2px 0 0 #8C1309,
+      0 4px 8px -2px rgba(224, 38, 26, 0.45);
   }
 
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  /* Hard offset shadow — brutalist street sign */
+  .shadow-brutal {
+    box-shadow: 6px 6px 0 0 #0B0B0A, 6px 6px 0 2px #F5C518;
   }
+  .shadow-brutal-red {
+    box-shadow: 6px 6px 0 0 #E0261A;
+  }
+
+  /* Price tag — giant, tabular */
+  .price-tag {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Display number for hero-level prices */
+  .display-price {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Marquee ticker for "promo" strips */
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 28s linear infinite;
+  }
+
+  /* Subtle float for badges */
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .animate-float-slow {
+    animation: float-slow 4s ease-in-out infinite;
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Fluid hover scale preserving GPU */
+  .hover-lift {
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px) scale(1.01);
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Selection styling */
+::selection {
+  background: #E0261A;
+  color: #F5EFE2;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0B0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #E0261A;
+  border: 2px solid #0B0B0A;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FFB300;
 }

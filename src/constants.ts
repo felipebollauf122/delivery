@@ -1,276 +1,283 @@
 import { Category, Product } from "./types";
 
 export const STORE_INFO = {
-  name: "Pizzaria Bella Massa",
+  name: "Bella Burger House",
   address: "Timbó, SC",
   status: "Aberto agora",
   openingHours: "18:00 - 23:30",
-  deliveryTime: "30–50 min",
-  logo: "https://picsum.photos/seed/pizza-logo/200/200",
+  deliveryTime: "25–40 min",
+  logo: "/logo.png",
   banner:
-    "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1200&h=600",
+    "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=1200&h=600",
   whatsapp: "5522999999999",
 };
 
 export const CATEGORIES: Category[] = [
-  { id: "all", name: "Todas" },
-  { id: "tradicionais", name: "Tradicionais" },
+  { id: "all", name: "Todos" },
+  { id: "classicos", name: "Clássicos" },
   { id: "especiais", name: "Especiais" },
   { id: "premium", name: "Premium" },
-  { id: "doces", name: "Doces" },
+  { id: "combos", name: "Combos" },
+  { id: "acompanhamentos", name: "Acompanhamentos" },
   { id: "bebidas", name: "Bebidas" },
 ];
 
 export const PRODUCTS: Product[] = [
-  // ===== TRADICIONAIS =====
+  // ===== CLÁSSICOS (âncora de preço a partir de 18,90) =====
   {
     id: "1",
-    name: "Pizza Calabresa",
+    name: "Smash Clássico",
     description:
-      "Calabresa fatiada, cebola roxa, azeitonas pretas e muçarela derretida",
-    price: 39.9,
+      "Blend bovino 120g smashed, queijo cheddar, picles, molho da casa no pão brioche artesanal",
+    price: 18.9,
     image:
-      "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "tradicionais",
-    tag: "🔥 Mais pedida",
-    ordersToday: 62,
-    ratingCount: 214,
+      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "classicos",
+    tag: "🔥 Mais pedido",
+    ordersToday: 184,
+    ratingCount: 612,
   },
   {
     id: "2",
-    name: "Pizza Marguerita",
+    name: "Cheese Simples",
     description:
-      "Molho de tomate artesanal, muçarela de búfala, tomate cereja e manjericão fresco",
-    price: 42.9,
+      "Hambúrguer 120g, cheddar americano derretido e maionese da casa no pão brioche",
+    price: 18.9,
     image:
-      "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "tradicionais",
-    ordersToday: 48,
-    ratingCount: 176,
+      "https://images.unsplash.com/photo-1550317138-10000687a72b?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "classicos",
+    tag: "💸 Porta de entrada",
+    ordersToday: 142,
+    ratingCount: 498,
   },
   {
     id: "3",
-    name: "Pizza Portuguesa",
+    name: "Duplo Salada",
     description:
-      "Presunto, ovos, cebola, ervilha, azeitonas pretas e muçarela bem recheada",
-    price: 44.9,
+      "Dois smash 120g, alface crocante, tomate, cebola roxa, picles e molho especial",
+    price: 21.9,
     image:
-      "https://images.unsplash.com/photo-1574071318508-1cdbad80ad38?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "tradicionais",
-    ordersToday: 35,
-    ratingCount: 121,
+      "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "classicos",
+    ordersToday: 98,
+    ratingCount: 287,
   },
   {
     id: "4",
-    name: "Pizza Mussarela",
+    name: "Cheddar Bacon",
     description:
-      "Generosa camada de muçarela derretida, orégano e azeitonas verdes",
-    price: 36.9,
+      "Smash 150g, bacon crocante em lascas, cheddar duplo cremoso e cebola caramelizada",
+    price: 23.9,
     image:
-      "https://images.unsplash.com/photo-1548365328-9f547fb0953b?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "tradicionais",
-    ordersToday: 30,
-    ratingCount: 98,
-  },
-  {
-    id: "5",
-    name: "Pizza Frango com Catupiry",
-    description:
-      "Frango desfiado temperado, catupiry original super cremoso e milho",
-    price: 45.9,
-    image:
-      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "tradicionais",
+      "https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "classicos",
     tag: "😱 Promoção",
-    ordersToday: 54,
-    ratingCount: 189,
+    ordersToday: 156,
+    ratingCount: 421,
   },
 
   // ===== ESPECIAIS =====
   {
-    id: "6",
-    name: "Pizza Quatro Queijos",
+    id: "5",
+    name: "Barbecue Texas",
     description:
-      "Muçarela, provolone, parmesão e gorgonzola — um clássico irresistível",
-    price: 48.9,
+      "Smash 150g, molho barbecue defumado na lenha, onion rings crocantes e cheddar",
+    price: 24.9,
     image:
-      "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?auto=format&fit=crop&q=80&w=800&h=800",
     category: "especiais",
-    ordersToday: 41,
-    ratingCount: 157,
+    ordersToday: 72,
+    ratingCount: 198,
+  },
+  {
+    id: "6",
+    name: "Chicken Crispy",
+    description:
+      "Peito de frango empanado duplo, alface americana, tomate e maionese temperada",
+    price: 19.9,
+    image:
+      "https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "especiais",
+    tag: "Novo",
+    ordersToday: 64,
+    ratingCount: 142,
   },
   {
     id: "7",
-    name: "Pizza Pepperoni",
+    name: "Jalapeño Fire",
     description:
-      "Pepperoni importado fatiado, muçarela, orégano e pitada de pimenta calabresa",
-    price: 49.9,
+      "Smash 150g, jalapeños frescos, cream cheese, molho sriracha e cebola roxa",
+    price: 22.9,
     image:
-      "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&q=80&w=800&h=800",
     category: "especiais",
-    tag: "Novo",
-    ordersToday: 38,
-    ratingCount: 102,
+    ordersToday: 48,
+    ratingCount: 117,
   },
   {
     id: "8",
-    name: "Pizza Bacon Supreme",
+    name: "Veggie Burger",
     description:
-      "Bacon crocante, cebola caramelizada, muçarela e um toque de alho poró",
-    price: 47.9,
+      "Hambúrguer artesanal de grão-de-bico e beterraba, rúcula, tomate e maionese vegana",
+    price: 18.9,
     image:
-      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1520072959219-c595dc870360?auto=format&fit=crop&q=80&w=800&h=800",
     category: "especiais",
-    ordersToday: 29,
-    ratingCount: 87,
-  },
-  {
-    id: "9",
-    name: "Pizza Vegetariana",
-    description:
-      "Abobrinha, berinjela, pimentão, tomate cereja, rúcula e muçarela",
-    price: 44.9,
-    image:
-      "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "especiais",
-    ordersToday: 22,
-    ratingCount: 68,
+    ordersToday: 31,
+    ratingCount: 76,
   },
 
   // ===== PREMIUM =====
   {
-    id: "10",
-    name: "Pizza Parma",
+    id: "9",
+    name: "Bella Signature",
     description:
-      "Presunto parma, rúcula selvagem, muçarela de búfala e lascas de parmesão",
-    price: 59.9,
+      "Smash 180g, queijo gruyère importado, bacon artesanal, rúcula, tomate confit e molho trufado",
+    price: 32.9,
     image:
-      "https://images.unsplash.com/photo-1565299543923-37dd37887442?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&q=80&w=800&h=800",
     category: "premium",
-    tag: "⭐ Premium",
-    ordersToday: 18,
-    ratingCount: 54,
+    tag: "⭐ Assinatura",
+    ordersToday: 54,
+    ratingCount: 182,
   },
   {
-    id: "11",
-    name: "Pizza Camarão ao Catupiry",
+    id: "10",
+    name: "Black Angus",
     description:
-      "Camarões salteados no alho, catupiry, muçarela e cebolinha fresca",
-    price: 69.9,
+      "Smash 180g de Black Angus maturado, provolone, cebola caramelizada no vinho tinto e mostarda dijon",
+    price: 35.9,
     image:
-      "https://images.unsplash.com/photo-1555072956-7758afb20e8f?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1565299507177-b0ac66763828?auto=format&fit=crop&q=80&w=800&h=800",
     category: "premium",
-    ordersToday: 14,
-    ratingCount: 41,
+    tag: "👑 Top da casa",
+    ordersToday: 38,
+    ratingCount: 124,
+  },
+
+  // ===== COMBOS =====
+  {
+    id: "11",
+    name: "Combo Smash",
+    description:
+      "Smash Clássico + batata rústica média + refrigerante lata 350ml — economize R$ 6",
+    price: 25.9,
+    image:
+      "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "combos",
+    tag: "💰 Melhor custo",
+    ordersToday: 127,
+    ratingCount: 378,
   },
   {
     id: "12",
-    name: "Pizza Trufada de Cogumelos",
+    name: "Combo Cheddar Bacon",
     description:
-      "Mix de cogumelos frescos, muçarela, creme trufado e azeite aromatizado",
-    price: 64.9,
+      "Cheddar Bacon + batata crinkle média + refrigerante lata 350ml — economize R$ 8",
+    price: 29.9,
     image:
-      "https://images.unsplash.com/photo-1594007654729-407eedc4be65?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "premium",
-    ordersToday: 11,
-    ratingCount: 33,
+      "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "combos",
+    ordersToday: 94,
+    ratingCount: 243,
   },
-
-  // ===== DOCES =====
   {
     id: "13",
-    name: "Pizza Chocolate com Morango",
+    name: "Combo Duplo",
     description:
-      "Chocolate ao leite derretido, morangos frescos e raspas de chocolate branco",
-    price: 39.9,
+      "Duplo Salada + batata grande + refrigerante lata 350ml + molho extra — economize R$ 9",
+    price: 27.9,
     image:
-      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "doces",
-    tag: "🍓 Favorita",
-    ordersToday: 25,
-    ratingCount: 92,
+      "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "combos",
+    ordersToday: 68,
+    ratingCount: 187,
   },
+
+  // ===== ACOMPANHAMENTOS =====
   {
     id: "14",
-    name: "Pizza Romeu e Julieta",
+    name: "Batata Rústica",
     description:
-      "Muçarela, goiabada derretida e canela polvilhada — doce clássico brasileiro",
-    price: 37.9,
+      "Batata rústica temperada com alecrim e flor de sal, porção 200g",
+    price: 6.9,
     image:
-      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "doces",
-    ordersToday: 17,
-    ratingCount: 58,
+      "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "acompanhamentos",
+    ordersToday: 152,
+    ratingCount: 411,
   },
   {
     id: "15",
-    name: "Pizza Banana com Canela",
+    name: "Onion Rings",
     description:
-      "Banana caramelizada, leite condensado, canela e toque de açúcar mascavo",
-    price: 35.9,
+      "Anéis de cebola empanados e crocantes com molho ranch, porção 180g",
+    price: 7.9,
     image:
-      "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "doces",
-    ordersToday: 13,
-    ratingCount: 44,
+      "https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "acompanhamentos",
+    ordersToday: 89,
+    ratingCount: 221,
   },
   {
     id: "16",
-    name: "Pizza Prestígio",
+    name: "Nuggets de Frango",
     description:
-      "Chocolate ao leite, coco ralado fresco e leite condensado — irresistível",
-    price: 38.9,
+      "10 nuggets crocantes com molho barbecue e honey mustard",
+    price: 8.9,
     image:
-      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=80&w=800&h=800",
-    category: "doces",
-    ordersToday: 16,
-    ratingCount: 51,
+      "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&q=80&w=800&h=800",
+    category: "acompanhamentos",
+    ordersToday: 73,
+    ratingCount: 168,
   },
 
   // ===== BEBIDAS =====
   {
     id: "17",
-    name: "Coca-Cola 2L",
-    description: "Refrigerante Coca-Cola garrafa 2 litros bem gelada",
-    price: 14.0,
+    name: "Coca-Cola Lata 350ml",
+    description: "Refrigerante Coca-Cola gelada, lata 350ml",
+    price: 5.0,
     image:
       "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=800&h=800",
     category: "bebidas",
-    ordersToday: 78,
-    ratingCount: 312,
+    ordersToday: 312,
+    ratingCount: 894,
   },
   {
     id: "18",
-    name: "Guaraná Antarctica 2L",
-    description: "Refrigerante Guaraná Antarctica garrafa 2 litros",
-    price: 13.0,
+    name: "Guaraná Antarctica Lata",
+    description: "Refrigerante Guaraná Antarctica, lata 350ml",
+    price: 5.0,
     image:
       "https://images.unsplash.com/photo-1624552184280-9e9631bbeee9?auto=format&fit=crop&q=80&w=800&h=800",
     category: "bebidas",
-    ordersToday: 42,
-    ratingCount: 164,
+    ordersToday: 188,
+    ratingCount: 524,
   },
   {
     id: "19",
-    name: "Suco Del Valle 1L",
-    description: "Suco de uva, laranja ou maracujá — escolha na observação",
-    price: 9.9,
+    name: "Suco Natural de Laranja",
+    description: "Suco de laranja natural 400ml feito na hora",
+    price: 7.9,
     image:
       "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&q=80&w=800&h=800",
     category: "bebidas",
-    ordersToday: 20,
-    ratingCount: 71,
+    ordersToday: 52,
+    ratingCount: 148,
   },
   {
     id: "20",
-    name: "Água Mineral 500ml",
-    description: "Água mineral sem gás gelada",
-    price: 4.0,
+    name: "Milkshake de Chocolate",
+    description:
+      "Milkshake cremoso de chocolate belga com chantilly, 400ml",
+    price: 9.9,
     image:
-      "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&q=80&w=800&h=800",
+      "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&q=80&w=800&h=800",
     category: "bebidas",
-    ordersToday: 35,
-    ratingCount: 88,
+    tag: "🥤 Queridinho",
+    ordersToday: 118,
+    ratingCount: 342,
   },
 ];
 
@@ -281,7 +288,7 @@ export const TESTIMONIALS = [
     avatar: "https://i.pravatar.cc/150?u=camila",
     rating: 5,
     comment:
-      "Melhor pizza que já comi na vida! A de Calabresa é um absurdo de bom! 🔥",
+      "Smash Clássico por R$ 9,90?! Achei que seria ruim pelo preço e me surpreendi: é MARAVILHOSO! 🔥",
   },
   {
     id: 2,
@@ -289,7 +296,7 @@ export const TESTIMONIALS = [
     avatar: "https://i.pravatar.cc/150?u=juliana",
     rating: 5,
     comment:
-      "Peço toda semana, nunca decepciona. A massa é crocante e o recheio é outro nível!",
+      "Peço o Combo Smash toda semana. Custo-benefício imbatível na cidade, chegam em 30 min e quentinho!",
   },
   {
     id: 3,
@@ -297,7 +304,7 @@ export const TESTIMONIALS = [
     avatar: "https://i.pravatar.cc/150?u=leticia",
     rating: 5,
     comment:
-      "Atendimento impecável e a pizza chega sempre quentinha. Super recomendo!",
+      "O Cheddar Bacon derrete na boca. Carne suculenta, bacon crocante e esse preço? Absurdamente bom!",
   },
   {
     id: 4,
@@ -305,7 +312,7 @@ export const TESTIMONIALS = [
     avatar: "https://i.pravatar.cc/150?u=fernanda",
     rating: 5,
     comment:
-      "Desde que descobri, não consigo comer em outro lugar. Viciante demais! ⭐",
+      "Bella Signature é outro nível. Ingredientes nobres, carne no ponto e molho trufado viciante. ⭐",
   },
   {
     id: 5,
@@ -313,6 +320,6 @@ export const TESTIMONIALS = [
     avatar: "https://i.pravatar.cc/150?u=lucas",
     rating: 5,
     comment:
-      "A Parma é espetacular. Ingredientes nobres e massa no ponto perfeito!",
+      "Batata rústica + Smash + Coca a menos de 17 reais. Abandonei as redes famosas, só peço aqui agora!",
   },
 ];

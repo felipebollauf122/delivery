@@ -1,45 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GoogleGenAI } from "@google/genai";
-import { 
-  ShoppingBag, 
-  Search, 
-  MapPin, 
-  Clock, 
-  ChevronRight, 
-  ChevronDown,
-  Plus, 
-  Minus, 
-  X, 
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  Trash2,
-  Settings,
-  LogOut,
-  LogIn,
-  Edit,
-  Save,
-  PlusCircle,
-  Check,
-  Image as ImageIcon,
-  Upload,
-  Loader2,
-  Crosshair,
-  Star,
-  Flame,
-  Zap,
-  TrendingUp,
-  Heart,
-  Info,
-  CreditCard,
-  User as UserIcon,
-  Lock,
-  Package,
-  ShieldCheck,
-  Award,
-  Users,
-  Truck
+import {
+  ShoppingBag, Search, MapPin, Clock, ChevronRight, ChevronDown,
+  Plus, Minus, X, ArrowLeft, CheckCircle2, XCircle, Trash2,
+  Settings, LogOut, LogIn, Edit, Save, PlusCircle, Check,
+  Image as ImageIcon, Upload, Loader2, Star, TrendingUp,
+  CreditCard, User as UserIcon, Lock, Package, ShieldCheck, Users, Truck
 } from "lucide-react";
 import { STORE_INFO, CATEGORIES as INITIAL_CATEGORIES, PRODUCTS as INITIAL_PRODUCTS, TESTIMONIALS as INITIAL_TESTIMONIALS } from "./constants";
 import { Product, CartItem, Category, Testimonial } from "./types";
@@ -51,31 +17,17 @@ import {
   OperationType, 
   handleFirestoreError 
 } from "./firebase";
-import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  query,
-  orderBy
-} from "firebase/firestore";
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL 
-} from "firebase/storage";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   signInWithPopup, 
   signOut, 
   onAuthStateChanged,
   User
 } from "firebase/auth";
-import { trackPixelEvent, PIXEL_ID, cleanPhone } from "./lib/pixel";
+import { trackPurchase, PIXEL_ID } from "./lib/pixel";
+import { captureTrackingParameters, readStoredParameters } from "./lib/tracking";
+import { notifyUtmify } from "./lib/utmify";
 
 // Error Boundary Component
 class ErrorBoundary extends (React.Component as any) {
@@ -280,21 +232,18 @@ const ProductCard = React.memo(({
   const rating = 4.9;
   
   return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -8 }}
+    <div
       onClick={onClick}
-      className="bg-pizza-card rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden premium-card-shadow transition-all duration-500 cursor-pointer group border border-white/5 flex flex-col h-full active:scale-[0.98]"
+      className="bg-pizza-card rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden premium-card-shadow cursor-pointer group border border-white/5 flex flex-col h-full active:scale-[0.98] hover:-translate-y-2 transition-transform duration-300"
     >
       <div className="relative aspect-square md:aspect-[4/3] overflow-hidden">
         <img 
-          src={product.image} 
-          alt={product.name} 
+          src={product.image}
+          alt={product.name}
           className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
           referrerPolicy="no-referrer"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-pizza-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
@@ -339,7 +288,7 @@ const ProductCard = React.memo(({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 
@@ -366,10 +315,7 @@ const CategoryButton = React.memo(({
   >
     <span className="relative z-10 uppercase tracking-widest">{name}</span>
     {isActive && (
-      <motion.div 
-        layoutId="activeCategory"
-        className="absolute inset-0 bg-gradient-to-r from-pizza-red to-pizza-orange opacity-20"
-      />
+      <div className="absolute inset-0 bg-gradient-to-r from-pizza-red to-pizza-orange opacity-20" />
     )}
   </button>
 ));
@@ -425,7 +371,7 @@ const LocationModal = React.memo(({
                   Onde você <br /> está agora?
                 </h2>
                 <p className="text-white/40 text-center text-xs md:text-sm mb-8 md:mb-10 font-medium leading-relaxed">
-                  Precisamos da sua localização para garantir que sua pizza chegue <span className="text-pizza-red font-black">quentinha</span> e no tempo certo.
+                  Precisamos da sua localização para garantir que seu lanche chegue <span className="text-pizza-red font-black">fresquinho</span> e no tempo certo.
                 </p>
 
                 <div className="space-y-5 md:space-y-6">
@@ -590,7 +536,7 @@ const CheckoutModal = React.memo(({
                       <Check size={48} strokeWidth={3} />
                     </div>
                     <h3 className="text-3xl font-display font-black text-white tracking-tighter">Pedido Gerado!</h3>
-                    <p className="text-white/40 text-base font-medium">Escaneie o QR Code ou copie o código Pix abaixo para confirmar sua pizza.</p>
+                    <p className="text-white/40 text-base font-medium">Escaneie o QR Code ou copie o código Pix abaixo para confirmar seu pedido.</p>
                   </div>
 
                   <div className="bg-pizza-card p-10 rounded-[3rem] flex flex-col items-center gap-8 border border-white/5 shadow-xl">
@@ -734,7 +680,7 @@ const CheckoutModal = React.memo(({
                       </div>
                       <div className="space-y-0.5">
                         <h3 className="text-2xl font-display font-black text-white tracking-tighter">Entrega</h3>
-                        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Onde entregamos sua pizza</p>
+                        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Onde entregamos seu pedido</p>
                       </div>
                     </div>
                     <div className="space-y-6">
@@ -910,7 +856,7 @@ const CartModal = React.memo(({
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-2xl font-display font-black text-white tracking-tighter">Carrinho Vazio</h3>
-                    <p className="text-white/40 font-medium">Que tal adicionar uma pizza deliciosa?</p>
+                    <p className="text-white/40 font-medium">Que tal adicionar um smash burger?</p>
                   </div>
                   <button 
                     onClick={onClose}
@@ -921,9 +867,13 @@ const CartModal = React.memo(({
                 </div>
               ) : (
                 cart.map((item) => (
-                  <motion.div 
-                    layout
-                    key={item.id} 
+                  <motion.div
+                    layout="position"
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     className="flex items-center gap-6 bg-pizza-card p-5 rounded-[2rem] shadow-sm border border-white/5 group"
                   >
                     <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner">
@@ -1091,86 +1041,45 @@ export default function App() {
     }
   }, [storeInfo, activeAdminTab, editingStoreInfo]);
 
-  // Geolocation Detection
+  // Geolocation Detection — race all services in parallel for speed
   const detectLocation = async () => {
-    let success = false;
     setIsDetecting(true);
-    
-    // Services to try in order
+
     const services = [
-      {
-        url: 'https://ipapi.co/json/',
-        parse: (data: any) => ({
-          city: data.city,
-          region: data.region_code || data.region
-        })
-      },
-      {
-        url: 'https://ipinfo.io/json',
-        parse: (data: any) => ({
-          city: data.city,
-          region: data.region // region is usually the state code or name
-        })
-      },
-      {
-        url: 'https://ipwho.is/',
-        parse: (data: any) => ({
-          city: data.city,
-          region: data.region_code || data.region
-        })
-      },
-      {
-        url: 'https://ip-api.com/json/',
-        parse: (data: any) => ({
-          city: data.city,
-          region: data.region || data.regionName
-        })
-      }
+      { url: 'https://ipapi.co/json/', parse: (d: any) => ({ city: d.city, region: d.region_code || d.region }) },
+      { url: 'https://ipinfo.io/json', parse: (d: any) => ({ city: d.city, region: d.region }) },
+      { url: 'https://ipwho.is/', parse: (d: any) => ({ city: d.city, region: d.region_code || d.region }) },
     ];
 
-    for (const service of services) {
+    const tryService = async (s: typeof services[0]) => {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 4000);
       try {
-        console.log(`[Location] Trying service: ${service.url}`);
-        
-        let response;
-        if (typeof AbortController !== 'undefined') {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
-          response = await fetch(service.url, { signal: controller.signal });
-          clearTimeout(timeoutId);
-        } else {
-          response = await fetch(service.url);
-        }
+        const res = await fetch(s.url, { signal: controller.signal });
+        clearTimeout(tid);
+        if (!res.ok) throw new Error(`${res.status}`);
+        const raw = await res.json();
+        const { city, region } = s.parse(raw);
+        if (!city || !region) throw new Error("missing data");
+        const stateObj = BRAZIL_STATES.find(st =>
+          normalizeString(st.uf) === normalizeString(region) ||
+          normalizeString(st.name) === normalizeString(region)
+        );
+        if (!stateObj) throw new Error("state not matched");
+        return { city, state: stateObj.name };
+      } catch (e) { clearTimeout(tid); throw e; }
+    };
 
-        if (!response.ok) continue;
-        
-        const rawData = await response.json();
-        const { city, region } = service.parse(rawData);
-        
-        if (city && region) {
-          const stateObj = BRAZIL_STATES.find(s => 
-            normalizeString(s.uf) === normalizeString(region) || 
-            normalizeString(s.name) === normalizeString(region)
-          );
-
-          if (stateObj) {
-            console.log(`[Location] Detected: ${city}, ${stateObj.name} via ${service.url}`);
-            setDetectedLocation({ city, state: stateObj.name });
-            setSelectedState(stateObj.name);
-            success = true;
-            setLocationStep(2);
-            break;
-          }
-        }
-      } catch (error) {
-        console.warn(`[Location] Service ${service.url} failed:`, error);
-      }
-    }
-    
-    if (!success) {
+    try {
+      const result = await Promise.any(services.map(tryService));
+      console.log(`[Location] Detected: ${result.city}, ${result.state}`);
+      setDetectedLocation(result);
+      setSelectedState(result.state);
+      setLocationStep(2);
+    } catch {
       console.warn("[Location] All geolocation services failed.");
-      setSelectedState("Santa Catarina"); // Default fallback
-      setSelectedCity("Timbó"); // Default city as requested
+      setSelectedState("Santa Catarina");
+      setSelectedCity("Timbó");
       setLocationStep(1);
     }
     setIsDetecting(false);
@@ -1178,6 +1087,7 @@ export default function App() {
 
   useEffect(() => {
     detectLocation();
+    captureTrackingParameters();
   }, []);
 
   // PIX Status Polling
@@ -1193,23 +1103,52 @@ export default function App() {
             console.log("[Pix] Status check:", data.status);
             if (data.status === "approved" || data.status === "paid") {
               setPixStatus("approved");
-              
-              // Meta Pixel Purchase (Pix Paid) - Removed to avoid double tracking with handleCheckout
-              /*
-              trackPixelEvent('Purchase', {
-                content_ids: cartRef.current.map(item => item.id),
-                num_items: cartRef.current.reduce((acc, item) => acc + item.quantity, 0),
+
+              const stateObj = BRAZIL_STATES.find(s => s.name === selectedStateRef.current);
+              const nameParts = customerNameRef.current.trim().split(/\s+/);
+              const cleanPhone = customerWhatsappRef.current.replace(/\D/g, "");
+              const cleanDoc = customerDocumentRef.current.replace(/\D/g, "");
+
+              // Single Purchase event — fired only when payment is approved.
+              trackPurchase({
+                transactionId: pixData.transactionId,
                 value: cartTotalRef.current,
-                currency: 'BRL',
-                transaction_id: pixData.transactionId
-              }, {
-                em: userRef.current?.email,
-                ph: cleanPhone(customerWhatsappRef.current),
-                fn: customerNameRef.current.split(' ')[0],
-                ln: customerNameRef.current.split(' ').slice(1).join(' '),
-                zp: customerAddressRef.current.cep.replace(/\D/g, '')
+                items: cartRef.current.map(item => ({
+                  id: String(item.id),
+                  quantity: item.quantity,
+                  price: item.price,
+                })),
+                customer: {
+                  email: customerEmailRef.current || userRef.current?.email || undefined,
+                  phone: cleanPhone,
+                  firstName: nameParts[0],
+                  lastName: nameParts.slice(1).join(' '),
+                  document: cleanDoc,
+                  city: selectedCityRef.current,
+                  state: stateObj?.uf || selectedStateRef.current,
+                  zip: customerAddressRef.current.cep,
+                  country: 'br',
+                },
               });
-              */
+
+              // Utmify "paid" — fire-and-forget.
+              notifyUtmify({
+                orderId: pixData.transactionId,
+                status: "paid",
+                amountCents: Math.round(cartTotalRef.current * 100),
+                client: {
+                  name: customerNameRef.current,
+                  email: customerEmailRef.current || userRef.current?.email || undefined,
+                  phone: cleanPhone,
+                  document: cleanDoc,
+                },
+                products: cartRef.current.map(item => ({
+                  id: String(item.id),
+                  name: item.name,
+                  quantity: Math.floor(item.quantity),
+                  priceCents: Math.round(item.price * 100),
+                })),
+              });
 
               clearInterval(interval);
             } else if (data.status === "expired") {
@@ -1400,6 +1339,10 @@ export default function App() {
   const customerWhatsappRef = React.useRef(customerWhatsapp);
   const customerNameRef = React.useRef(customerName);
   const customerAddressRef = React.useRef(customerAddress);
+  const customerEmailRef = React.useRef(customerEmail);
+  const customerDocumentRef = React.useRef(customerDocument);
+  const selectedCityRef = React.useRef(selectedCity);
+  const selectedStateRef = React.useRef(selectedState);
 
   useEffect(() => { cartRef.current = cart; }, [cart]);
   useEffect(() => { cartTotalRef.current = cartTotal; }, [cartTotal]);
@@ -1407,6 +1350,10 @@ export default function App() {
   useEffect(() => { customerWhatsappRef.current = customerWhatsapp; }, [customerWhatsapp]);
   useEffect(() => { customerNameRef.current = customerName; }, [customerName]);
   useEffect(() => { customerAddressRef.current = customerAddress; }, [customerAddress]);
+  useEffect(() => { customerEmailRef.current = customerEmail; }, [customerEmail]);
+  useEffect(() => { customerDocumentRef.current = customerDocument; }, [customerDocument]);
+  useEffect(() => { selectedCityRef.current = selectedCity; }, [selectedCity]);
+  useEffect(() => { selectedStateRef.current = selectedState; }, [selectedState]);
 
   const [realisticAddress, setRealisticAddress] = useState("");
   const [isGeneratingAddress, setIsGeneratingAddress] = useState(false);
@@ -1437,51 +1384,78 @@ export default function App() {
     return storeInfo.address;
   }, [selectedCity, selectedState, realisticAddress, isGeneratingAddress, storeInfo.address]);
 
-  // Generate realistic address when city changes
+  // Generate realistic address when city changes — uses OpenStreetMap Nominatim
+  // to pick a REAL commercial location (restaurant/fast_food/cafe) in the customer's city.
   useEffect(() => {
-    const generateRealisticAddress = async () => {
-      if (selectedCity && selectedState) {
-        if (selectedCity.toLowerCase() === "joinville") {
-          setRealisticAddress(""); // Not needed for Joinville
-          setIsGeneratingAddress(false);
-          return;
-        }
-        setIsGeneratingAddress(true);
-        setRealisticAddress(""); // Clear old address immediately
-        try {
-          const apiKey = process.env.GEMINI_API_KEY;
-          if (!apiKey) {
-            throw new Error("Gemini API Key not found in environment.");
-          }
+    const controller = new AbortController();
 
-          const ai = new GoogleGenAI({ apiKey });
-          const response = await ai.models.generateContent({
-            model: "gemini-flash-latest",
-            contents: `Gere um endereço físico REALISTA e VÁLIDO (nome da rua e número) na cidade de ${selectedCity}, ${selectedState}, Brasil. O endereço deve parecer o local de uma pizzaria comercial. Responda APENAS o endereço, sem explicações ou aspas. Exemplo: Rua Sete de Setembro, 450`,
-          });
-          
-          if (response.text) {
-            setRealisticAddress(response.text.trim().replace(/\n/g, ' '));
-          } else {
-            throw new Error("Empty response from Gemini.");
-          }
-        } catch (error) {
-          console.error("Error generating realistic address:", error);
-          // Fallback to a generic but plausible address if AI fails
-          const streetNames = ["Rua das Flores", "Avenida Central", "Rua São José", "Rua XV de Novembro", "Rua Getúlio Vargas"];
-          const randomStreet = streetNames[Math.floor(Math.random() * streetNames.length)];
-          const randomNumber = Math.floor(Math.random() * 900) + 10;
-          setRealisticAddress(`${randomStreet}, ${randomNumber}`);
-        } finally {
-          setIsGeneratingAddress(false);
-        }
-      } else {
+    const fetchRealAddress = async () => {
+      if (!selectedCity || !selectedState) {
         setRealisticAddress("");
+        setIsGeneratingAddress(false);
+        return;
+      }
+
+      if (selectedCity.toLowerCase() === "joinville") {
+        setRealisticAddress("");
+        setIsGeneratingAddress(false);
+        return;
+      }
+
+      setIsGeneratingAddress(true);
+      setRealisticAddress("");
+
+      try {
+        // Step 1: geocode the city to get its bounding box
+        const geoUrl = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(selectedCity)}&state=${encodeURIComponent(selectedState)}&country=Brazil&format=json&limit=1`;
+        const geoRes = await fetch(geoUrl, {
+          signal: controller.signal,
+          headers: { "Accept-Language": "pt-BR" },
+        });
+        const geoData = await geoRes.json();
+        const place = Array.isArray(geoData) ? geoData[0] : null;
+        if (!place?.boundingbox) throw new Error("city not found on nominatim");
+
+        const [south, north, west, east] = place.boundingbox.map(Number);
+
+        // Step 2: ask Overpass for real food venues inside that bbox
+        const overpassQuery = `[out:json][timeout:15];(
+          node["amenity"~"fast_food|restaurant|cafe"](${south},${west},${north},${east});
+        );out tags 40;`;
+        const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "data=" + encodeURIComponent(overpassQuery),
+        });
+        const overpassData = await overpassRes.json();
+        const venues = (overpassData?.elements || []).filter((el: any) => {
+          const t = el.tags || {};
+          return t["addr:street"] && (t["addr:housenumber"] || t["addr:postcode"]);
+        });
+
+        if (venues.length === 0) throw new Error("no venues with address tags");
+
+        const pick = venues[Math.floor(Math.random() * venues.length)];
+        const t = pick.tags;
+        const street = t["addr:street"];
+        const number = t["addr:housenumber"] || String((t["addr:street"].length * 13) % 900 + 10);
+        setRealisticAddress(`${street}, ${number}`);
+      } catch (error) {
+        if ((error as any)?.name === "AbortError") return;
+        console.warn("[address] nominatim/overpass failed, using deterministic fallback:", error);
+        // Deterministic fallback keyed off the city name so repeat visits show the same address
+        const hash = selectedCity.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const street = COMMON_STREETS[hash % COMMON_STREETS.length];
+        const number = (hash % 900) + 10;
+        setRealisticAddress(`${street}, ${number}`);
+      } finally {
         setIsGeneratingAddress(false);
       }
     };
 
-    generateRealisticAddress();
+    fetchRealAddress();
+    return () => controller.abort();
   }, [selectedCity, selectedState]);
 
   // Handle closing modal when address is ready after confirmation
@@ -1544,27 +1518,12 @@ export default function App() {
       const cleanPhoneStr = customerWhatsapp.replace(/\D/g, '');
       const cleanDocument = customerDocument.replace(/\D/g, '');
       const finalAmount = parseFloat(cartTotal.toFixed(2));
-      
-      // Use fixed email as requested for Poseidon Pay compatibility
-      const email = customerEmail || "okfgwujifnwuj@gmail.com";
 
-      // Use fixed, valid data for Poseidon Pay API call as requested
       const clientData = {
-        type: "individual",
-        name: "Cliente Pix",
-        email: "pix@pagamento.com",
-        phone: "+5511999999999",
-        document: "11144477735", // Valid CPF
-        address: {
-          zipCode: "01001-000", // Hyphenated CEP
-          street: "Praca da Se",
-          number: "1",
-          complement: "Sede",
-          neighborhood: "Se",
-          city: "Sao Paulo",
-          state: "SP",
-          country: "BR"
-        }
+        name: customerName,
+        email: customerEmail || user?.email || "cliente@bellaburger.com",
+        phone: cleanPhoneStr,
+        document: cleanDocument,
       };
 
       // Gera o pagamento via API (Pix)
@@ -1580,7 +1539,8 @@ export default function App() {
             name: item.name.substring(0, 100),
             quantity: Math.floor(item.quantity),
             price: parseFloat(item.price.toFixed(2))
-          }))
+          })),
+          trackingParameters: readStoredParameters()
         })
       });
 
@@ -1635,22 +1595,22 @@ export default function App() {
         transactionId: transactionId
       });
 
-      // Meta Pixel Purchase (Pix Generated)
-      // As requested, only track Purchase event.
-      trackPixelEvent('Purchase', {
-        content_ids: cart.map(item => item.id),
-        num_items: cart.reduce((acc, item) => acc + item.quantity, 0),
-        value: finalAmount,
-        currency: 'BRL',
-        transaction_id: transactionId
-      }, {
-        em: customerEmail || user?.email,
-        ph: cleanPhone(customerWhatsapp),
-        fn: customerName.split(' ')[0],
-        ln: customerName.split(' ').slice(1).join(' '),
-        zp: customerAddress.cep.replace(/\D/g, '')
+      // Purchase event is fired only when payment is approved (see polling
+      // effect). Here we fire Utmify "waiting_payment" so the funnel registers
+      // the pending order immediately.
+      notifyUtmify({
+        orderId: transactionId,
+        status: "waiting_payment",
+        amountCents: Math.round(finalAmount * 100),
+        client: clientData,
+        products: cart.map(item => ({
+          id: String(item.id),
+          name: item.name,
+          quantity: Math.floor(item.quantity),
+          priceCents: Math.round(item.price * 100),
+        })),
       });
-      
+
       setPixStatus("pending");
       setIsProcessing(false);
       return;
@@ -1678,22 +1638,6 @@ export default function App() {
   };
 
   const sendWhatsAppOrder = () => {
-    // Meta Pixel Purchase (WhatsApp Order) - Removed to avoid double tracking with handleCheckout
-    /*
-    trackPixelEvent('Purchase', {
-      content_ids: cart.map(item => item.id),
-      num_items: cart.reduce((acc, item) => acc + item.quantity, 0),
-      value: cartTotal,
-      currency: 'BRL'
-    }, {
-      em: customerEmail || user?.email,
-      ph: cleanPhone(customerWhatsapp),
-      fn: customerName.split(' ')[0],
-      ln: customerName.split(' ').slice(1).join(' '),
-      zp: customerAddress.cep.replace(/\D/g, '')
-    });
-    */
-
     const cartItemsText = cart.map(item => 
       `• ${item.quantity}x ${item.name} - ${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
     ).join('\n');
@@ -1744,65 +1688,54 @@ export default function App() {
     }
   };
 
-  // Admin Actions
+  // Admin Actions — LOCAL MODE (no Firestore). Mutate React state directly.
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
-    
+
     setIsSaving(true);
     setAdminError(null);
     try {
-      if (editingProduct.id) {
-        const { id, ...data } = editingProduct;
-        // Filter out undefined values for Firestore
-        const cleanData = Object.fromEntries(
-          Object.entries(data).filter(([_, v]) => v !== undefined)
-        );
-        await updateDoc(doc(db, "products", id), cleanData);
-      } else {
-        await addDoc(collection(db, "products"), editingProduct);
-      }
+      setProducts((prev: Product[]) => {
+        if (editingProduct.id) {
+          return prev.map((p: Product) =>
+            p.id === editingProduct.id ? ({ ...p, ...editingProduct } as Product) : p
+          );
+        }
+        const newProduct: Product = {
+          ...(editingProduct as Product),
+          id: `local-${Date.now()}`,
+        };
+        return [...prev, newProduct];
+      });
       setProductSaveSuccess(true);
       setTimeout(() => {
         setProductSaveSuccess(false);
         setEditingProduct(null);
-      }, 1500);
+      }, 1200);
     } catch (error: any) {
       console.error("Error saving product:", error);
-      setAdminError("Erro ao salvar produto. Verifique sua conexão.");
-      handleFirestoreError(error, editingProduct.id ? OperationType.UPDATE : OperationType.CREATE, "products");
+      setAdminError("Erro ao salvar produto.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const deleteProduct = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, "products", id));
-      setProductToDelete(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, "products");
-    }
+    setProducts((prev: Product[]) => prev.filter((p: Product) => p.id !== id));
+    setProductToDelete(null);
   };
 
   const resetMenu = async () => {
     setIsResettingMenu(true);
     setAdminError(null);
     try {
-      const existing = await getDocs(collection(db, "products"));
-      await Promise.all(existing.docs.map(d => deleteDoc(doc(db, "products", d.id))));
-      await Promise.all(
-        INITIAL_PRODUCTS.map(p => {
-          const { id, ...rest } = p;
-          return addDoc(collection(db, "products"), rest);
-        })
-      );
+      setProducts(INITIAL_PRODUCTS);
       setShowResetMenuConfirm(false);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => setSaveSuccess(false), 2500);
     } catch (error) {
-      setAdminError("Erro ao resetar cardápio. Verifique as permissões.");
-      handleFirestoreError(error, OperationType.WRITE, "products");
+      setAdminError("Erro ao resetar cardápio.");
     } finally {
       setIsResettingMenu(false);
     }
@@ -1814,12 +1747,11 @@ export default function App() {
     setIsSaving(true);
     setAdminError(null);
     try {
-      await setDoc(doc(db, "settings", "store"), editingStoreInfo);
+      setStoreInfo(editingStoreInfo);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => setSaveSuccess(false), 2500);
     } catch (error: any) {
-      setAdminError("Erro ao salvar configurações. Verifique as permissões.");
-      handleFirestoreError(error, OperationType.UPDATE, "settings/store");
+      setAdminError("Erro ao salvar configurações.");
     } finally {
       setIsSaving(false);
     }
@@ -1828,42 +1760,37 @@ export default function App() {
   const saveTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTestimonial) return;
-    
+
     setIsSaving(true);
     setAdminError(null);
     try {
-      if (editingTestimonial.id) {
-        const { id, ...data } = editingTestimonial;
-        const cleanData = Object.fromEntries(
-          Object.entries(data).filter(([_, v]) => v !== undefined)
-        );
-        await updateDoc(doc(db, "testimonials", id), cleanData);
-      } else {
-        await addDoc(collection(db, "testimonials"), {
-          ...editingTestimonial,
-          createdAt: new Date().toISOString()
-        });
-      }
+      setTestimonials((prev: Testimonial[]) => {
+        if (editingTestimonial.id) {
+          return prev.map((t: Testimonial) =>
+            t.id === editingTestimonial.id ? ({ ...t, ...editingTestimonial } as Testimonial) : t
+          );
+        }
+        const newItem: Testimonial = {
+          ...(editingTestimonial as Testimonial),
+          id: `local-${Date.now()}` as unknown as Testimonial["id"],
+        };
+        return [...prev, newItem];
+      });
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
         setEditingTestimonial(null);
-      }, 1500);
+      }, 1200);
     } catch (error: any) {
       console.error("Error saving testimonial:", error);
       setAdminError("Erro ao salvar feedback.");
-      handleFirestoreError(error, editingTestimonial.id ? OperationType.UPDATE : OperationType.CREATE, "testimonials");
     } finally {
       setIsSaving(false);
     }
   };
 
   const deleteTestimonial = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, "testimonials", id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, "testimonials");
-    }
+    setTestimonials((prev: Testimonial[]) => prev.filter((t: Testimonial) => String(t.id) !== String(id)));
   };
 
   if (isLoading) {
@@ -2000,155 +1927,148 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-pizza-dark p-4 md:p-12 font-sans text-white">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-pizza-dark font-sans text-white">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
           {/* Admin Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
-            <div className="flex items-center gap-6">
-              <button 
+          <header className="flex flex-wrap items-center justify-between gap-4 mb-8 md:mb-10">
+            <div className="flex items-center gap-4 min-w-0">
+              <button
                 onClick={() => {
                   setIsAdminView(false);
                   window.history.pushState({}, '', '/');
                 }}
-                className="w-12 h-12 bg-pizza-card rounded-2xl flex items-center justify-center text-white shadow-xl hover:bg-pizza-red transition-all border border-white/5"
+                className="w-11 h-11 shrink-0 bg-pizza-card rounded-2xl flex items-center justify-center text-white hover:bg-pizza-red transition-colors border border-white/5"
+                title="Voltar para o site"
               >
-                <ArrowLeft size={24} strokeWidth={3} />
+                <ArrowLeft size={20} strokeWidth={3} />
               </button>
-              <div>
-                <h1 className="text-4xl font-black text-white tracking-tighter leading-none uppercase">Painel <span className="text-pizza-red">Admin</span></h1>
-                <p className="text-white/40 font-bold text-xs uppercase tracking-widest mt-1">Gerencie sua loja com facilidade</p>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter leading-none uppercase truncate">
+                  Painel <span className="text-pizza-red">Admin</span>
+                </h1>
+                <p className="text-white/40 font-bold text-[10px] md:text-xs uppercase tracking-widest mt-1 truncate">
+                  Bella Burger House
+                </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-4 bg-pizza-card p-2 rounded-3xl shadow-xl border border-white/5">
-              <div className="flex items-center gap-3 px-4">
-                <div className="w-10 h-10 bg-pizza-dark rounded-xl flex items-center justify-center text-white border border-white/5">
-                  <UserIcon size={20} strokeWidth={2.5} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">Logado como</span>
-                  <span className="text-sm font-black text-white tracking-tight">{user?.email}</span>
-                </div>
+
+            <div className="flex items-center gap-2 bg-pizza-card pl-3 pr-2 py-2 rounded-2xl border border-white/5">
+              <div className="w-9 h-9 bg-pizza-dark rounded-xl flex items-center justify-center text-white/70 border border-white/5 shrink-0">
+                <UserIcon size={16} strokeWidth={2.5} />
               </div>
-              <button 
-                onClick={logout} 
-                className="w-12 h-12 bg-pizza-red/10 text-pizza-red rounded-2xl flex items-center justify-center hover:bg-pizza-red hover:text-white transition-all border border-pizza-red/20"
+              <div className="hidden sm:flex flex-col leading-tight mr-2 min-w-0">
+                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Logado</span>
+                <span className="text-xs font-black text-white truncate max-w-[160px]">{user?.email || "Dev mode"}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="w-9 h-9 bg-pizza-red/10 text-pizza-red rounded-xl flex items-center justify-center hover:bg-pizza-red hover:text-white transition-colors border border-pizza-red/20 shrink-0"
                 title="Sair"
               >
-                <LogOut size={20} strokeWidth={3} />
+                <LogOut size={16} strokeWidth={3} />
               </button>
             </div>
-          </div>
+          </header>
 
-          <div className="flex flex-col lg:flex-row gap-12">
-            {/* Sidebar Tabs */}
-            <div className="w-full lg:w-64 flex-shrink-0">
-              <div className="bg-pizza-card p-2 rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-row lg:flex-col gap-2">
-                <button 
-                  onClick={() => setActiveAdminTab("products")}
-                  className={`flex-1 flex items-center gap-4 p-5 rounded-[2rem] font-black uppercase tracking-widest text-xs transition-all ${
-                    activeAdminTab === "products" 
-                    ? "bg-pizza-red text-white shadow-2xl shadow-pizza-red/30" 
-                    : "text-white/40 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <ShoppingBag size={18} strokeWidth={3} /> <span className="hidden md:inline">Produtos</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    if (activeAdminTab !== "settings") {
-                      setActiveAdminTab("settings");
-                      setEditingStoreInfo(storeInfo);
-                    }
-                  }}
-                  className={`flex-1 flex items-center gap-4 p-5 rounded-[2rem] font-black uppercase tracking-widest text-xs transition-all ${
-                    activeAdminTab === "settings" 
-                    ? "bg-pizza-red text-white shadow-2xl shadow-pizza-red/30" 
-                    : "text-white/40 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <Settings size={18} strokeWidth={3} /> <span className="hidden md:inline">Configurações</span>
-                </button>
-                <button 
-                  onClick={() => setActiveAdminTab("testimonials")}
-                  className={`flex-1 flex items-center gap-4 p-5 rounded-[2rem] font-black uppercase tracking-widest text-xs transition-all ${
-                    activeAdminTab === "testimonials" 
-                    ? "bg-pizza-red text-white shadow-2xl shadow-pizza-red/30" 
-                    : "text-white/40 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <Users size={18} strokeWidth={3} /> <span className="hidden md:inline">Feedbacks</span>
-                </button>
-              </div>
+          {/* Tab Bar — horizontal scroll on mobile, full row on desktop */}
+          <nav className="mb-8 md:mb-10">
+            <div className="bg-pizza-card p-1.5 rounded-2xl border border-white/5 flex gap-1 overflow-x-auto no-scrollbar">
+              {[
+                { id: "products", label: "Produtos", icon: ShoppingBag },
+                { id: "settings", label: "Configurações", icon: Settings },
+                { id: "testimonials", label: "Feedbacks", icon: Users },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const active = activeAdminTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveAdminTab(tab.id);
+                      if (tab.id === "settings") setEditingStoreInfo(storeInfo);
+                    }}
+                    className={`flex-1 min-w-[140px] flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl font-black uppercase tracking-widest text-[11px] transition-colors ${
+                      active
+                        ? "bg-pizza-red text-white shadow-lg shadow-pizza-red/20"
+                        : "text-white/50 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={3} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
+          </nav>
+
+          <div className="flex flex-col gap-8">
 
             {/* Main Content Area */}
             <div className="flex-1">
               {activeAdminTab === "products" ? (
                 <>
-                <div className="mb-8 flex items-center justify-between bg-pizza-card p-6 rounded-[2rem] border border-white/5 shadow-2xl">
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Resetar cardápio</h3>
-                    <p className="text-xs text-white/40 font-bold mt-1">Apaga todos os produtos e recarrega o cardápio padrão de pizzas.</p>
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-pizza-card p-5 md:p-6 rounded-2xl border border-white/5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs md:text-sm font-black uppercase tracking-widest text-white">Resetar cardápio</h3>
+                    <p className="text-[11px] md:text-xs text-white/40 font-bold mt-1 leading-relaxed">Restaura o cardápio padrão de hamburgers. Descarta alterações locais.</p>
                   </div>
                   <button
                     onClick={() => setShowResetMenuConfirm(true)}
                     disabled={isResettingMenu}
-                    className="px-6 py-4 bg-pizza-red text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-pizza-red/90 transition-all border border-pizza-red/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="shrink-0 px-5 py-3 bg-pizza-red text-white rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-pizza-red/90 transition-colors border border-pizza-red/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {isResettingMenu ? "Resetando..." : "Resetar agora"}
                   </button>
                 </div>
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                   {/* Form Column */}
-                  <div className="xl:col-span-5">
-                    <motion.div 
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-pizza-card p-8 rounded-[3rem] shadow-2xl border border-white/5 sticky top-12"
+                  <div className="lg:col-span-5">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-pizza-card p-6 md:p-8 rounded-2xl border border-white/5 lg:sticky lg:top-6"
                     >
-                      <h2 className="text-2xl font-display font-black text-white tracking-tighter mb-8 flex items-center gap-3 uppercase">
-                        <div className="w-10 h-10 bg-pizza-dark rounded-xl flex items-center justify-center text-pizza-red border border-white/5">
-                          {editingProduct?.id ? <Edit size={20} strokeWidth={3} /> : <PlusCircle size={20} strokeWidth={3} />}
+                      <h2 className="text-xl md:text-2xl font-display font-black text-white tracking-tighter mb-6 flex items-center gap-3 uppercase">
+                        <div className="w-10 h-10 bg-pizza-dark rounded-xl flex items-center justify-center text-pizza-red border border-white/5 shrink-0">
+                          {editingProduct?.id ? <Edit size={18} strokeWidth={3} /> : <PlusCircle size={18} strokeWidth={3} />}
                         </div>
-                        {editingProduct?.id ? "Editar Produto" : "Novo Produto"}
+                        {editingProduct?.id ? "Editar produto" : "Novo produto"}
                       </h2>
 
                       {adminError && (
-                        <motion.div 
+                        <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="p-4 bg-pizza-red/10 text-pizza-red rounded-2xl text-center font-black text-xs uppercase tracking-widest border border-pizza-red/20 mb-6"
+                          className="p-3 bg-pizza-red/10 text-pizza-red rounded-xl text-center font-black text-[11px] uppercase tracking-widest border border-pizza-red/20 mb-5"
                         >
                           {adminError}
                         </motion.div>
                       )}
-                      
-                      <form onSubmit={saveProduct} className="space-y-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Nome do Produto</label>
-                          <input 
-                            type="text" 
+
+                      <form onSubmit={saveProduct} className="space-y-5">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Nome do produto</label>
+                          <input
+                            type="text"
                             required
-                            placeholder="Ex: Pizza de Calabresa"
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white placeholder:text-white/10"
+                            placeholder="Ex: Smash Clássico"
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-bold text-white placeholder:text-white/20 text-sm"
                             value={editingProduct?.name || ""}
                             onChange={e => setEditingProduct(prev => ({ ...(prev || {}), name: e.target.value }))}
                           />
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Preço (R$)</label>
-                            <input 
-                              type="text" 
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Preço (R$)</label>
+                            <input
+                              type="text"
                               required
                               placeholder="0,00"
-                              className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-black text-white placeholder:text-white/10"
+                              className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-black text-white placeholder:text-white/20 text-sm tabular-nums"
                               value={priceInput}
                               onChange={e => {
                                 const rawVal = e.target.value;
-                                // Allow only numbers and one comma/dot
                                 if (/^[0-9]*[.,]?[0-9]*$/.test(rawVal) || rawVal === "") {
                                   setPriceInput(rawVal);
                                   const numericVal = parseFloat(rawVal.replace(',', '.')) || 0;
@@ -2157,11 +2077,11 @@ export default function App() {
                               }}
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Categoria</label>
-                            <select 
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Categoria</label>
+                            <select
                               required
-                              className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white appearance-none cursor-pointer"
+                              className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-bold text-white appearance-none cursor-pointer text-sm"
                               value={editingProduct?.category || ""}
                               onChange={e => setEditingProduct(prev => ({ ...(prev || {}), category: e.target.value }))}
                             >
@@ -2171,50 +2091,50 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Descrição</label>
-                          <textarea 
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-medium text-white placeholder:text-white/10 h-32 resize-none"
-                            placeholder="Descreva os ingredientes da pizza..."
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Descrição</label>
+                          <textarea
+                            className="w-full p-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-medium text-white placeholder:text-white/20 h-24 resize-none text-sm leading-relaxed"
+                            placeholder="Descreva os ingredientes..."
                             value={editingProduct?.description || ""}
                             onChange={e => setEditingProduct(prev => ({ ...(prev || {}), description: e.target.value }))}
                           />
                         </div>
 
-                        <ImageUpload 
-                          label="Foto do Produto"
+                        <ImageUpload
+                          label="Foto do produto"
                           currentImage={editingProduct?.image}
                           onUpload={url => setEditingProduct(prev => ({ ...(prev || {}), image: url }))}
                           folder="products"
                         />
 
-                        <div className="pt-4">
+                        <div className="pt-2">
                           {productSaveSuccess && (
-                            <motion.div 
+                            <motion.div
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="p-4 bg-green-500/10 text-green-500 rounded-2xl text-center font-black text-xs uppercase tracking-widest border border-green-500/20 mb-4"
+                              className="p-3 bg-green-500/10 text-green-500 rounded-xl text-center font-black text-[11px] uppercase tracking-widest border border-green-500/20 mb-4"
                             >
-                              Produto salvo com sucesso!
+                              Produto salvo!
                             </motion.div>
                           )}
-                          <div className="flex gap-3">
-                            <button 
+                          <div className="flex gap-2">
+                            <button
                               type="submit"
                               disabled={isSaving}
-                              className="flex-1 bg-pizza-red text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-pizza-red/90 transition-all shadow-2xl shadow-pizza-red/30 disabled:opacity-50 flex items-center justify-center gap-2"
+                              className="flex-1 h-12 bg-pizza-red text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-pizza-red/90 transition-colors shadow-lg shadow-pizza-red/20 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                               {isSaving ? (
-                                <Loader2 className="animate-spin" size={20} />
+                                <Loader2 className="animate-spin" size={18} />
                               ) : (
-                                <><Save size={20} strokeWidth={3} /> Salvar</>
+                                <><Save size={16} strokeWidth={3} /> Salvar</>
                               )}
                             </button>
                             {editingProduct?.id && (
-                              <button 
+                              <button
                                 type="button"
-                                onClick={() => setEditingProduct(null)}
-                                className="px-6 bg-white/5 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-white/10 transition-all border border-white/5"
+                                onClick={() => { setEditingProduct(null); setPriceInput(""); }}
+                                className="h-12 px-5 bg-white/5 text-white/70 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-white/10 hover:text-white transition-colors border border-white/5"
                               >
                                 Cancelar
                               </button>
@@ -2226,117 +2146,120 @@ export default function App() {
                   </div>
 
                   {/* List Column */}
-                  <div className="xl:col-span-7">
-                    <div className="bg-pizza-card rounded-[3rem] shadow-2xl border border-white/5 overflow-hidden">
-                      <div className="p-8 border-b border-white/5 bg-white/5">
-                        <h3 className="text-lg font-display font-black text-white uppercase tracking-tighter">Seu Cardápio</h3>
+                  <div className="lg:col-span-7">
+                    <div className="bg-pizza-card rounded-2xl border border-white/5 overflow-hidden">
+                      <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                        <h3 className="text-sm md:text-base font-display font-black text-white uppercase tracking-wider">Cardápio</h3>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest tabular-nums">
+                          {products.length} itens
+                        </span>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                          <tbody className="divide-y divide-white/5">
-                            {products.map(p => (
-                              <tr key={p.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="p-6">
-                                  <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm border border-white/5">
-                                      <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                                    </div>
-                                    <div>
-                                      <span className="font-black text-white tracking-tight block leading-none mb-1">{p.name}</span>
-                                      <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
-                                        {categories.find(c => c.id === p.category)?.name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="p-6">
-                                  <span className="font-black text-pizza-red tracking-tighter text-lg">
-                                    {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                  </span>
-                                </td>
-                                <td className="p-6 text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <button 
-                                      onClick={() => {
-                                        setEditingProduct(p);
-                                        setPriceInput(p.price.toString());
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                      }}
-                                      className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white hover:bg-pizza-red transition-all border border-white/5"
-                                    >
-                                      <Edit size={18} strokeWidth={2.5} />
-                                    </button>
-                                    <button 
-                                      onClick={() => setProductToDelete(p.id)}
-                                      className="w-10 h-10 rounded-xl bg-pizza-red/10 text-pizza-red hover:bg-pizza-red hover:text-white transition-all border border-pizza-red/20"
-                                    >
-                                      <Trash2 size={18} strokeWidth={2.5} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <ul className="divide-y divide-white/5">
+                        {products.map((p: Product) => (
+                          <li key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                            <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/5 shrink-0 bg-pizza-dark">
+                              <img src={p.image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-black text-white text-sm tracking-tight truncate">{p.name}</p>
+                              <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-0.5 truncate">
+                                {categories.find(c => c.id === p.category)?.name || p.category}
+                              </p>
+                            </div>
+                            <span className="font-black text-pizza-red text-base tabular-nums shrink-0">
+                              {p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
+                            <div className="flex gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingProduct(p);
+                                  setPriceInput(p.price.toString());
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-white/70 hover:bg-pizza-red hover:text-white transition-colors border border-white/5"
+                                title="Editar"
+                                aria-label={`Editar ${p.name}`}
+                              >
+                                <Edit size={15} strokeWidth={2.5} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setProductToDelete(p.id)}
+                                className="w-9 h-9 rounded-lg bg-pizza-red/10 text-pizza-red hover:bg-pizza-red hover:text-white transition-colors border border-pizza-red/20 flex items-center justify-center"
+                                title="Excluir"
+                                aria-label={`Excluir ${p.name}`}
+                              >
+                                <Trash2 size={15} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                        {products.length === 0 && (
+                          <li className="px-6 py-16 text-center">
+                            <p className="text-white/30 font-black uppercase tracking-widest text-xs">Nenhum produto no cardápio</p>
+                          </li>
+                        )}
+                      </ul>
                     </div>
                   </div>
                 </div>
                 </>
               ) : activeAdminTab === "testimonials" ? (
-                <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="grid grid-cols-1 xl:grid-cols-12 gap-12"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8"
                 >
                   {/* Testimonial Form Column */}
-                  <div className="xl:col-span-5">
-                    <div className="bg-pizza-card p-8 md:p-12 rounded-[3rem] shadow-2xl border border-white/5 sticky top-32">
-                      <div className="flex items-center gap-4 mb-10">
-                        <div className="w-12 h-12 bg-pizza-red/10 rounded-2xl flex items-center justify-center text-pizza-red">
-                          <PlusCircle size={24} strokeWidth={3} />
+                  <div className="lg:col-span-5">
+                    <div className="bg-pizza-card p-6 md:p-8 rounded-2xl border border-white/5 lg:sticky lg:top-6">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-pizza-dark rounded-xl flex items-center justify-center text-pizza-red border border-white/5 shrink-0">
+                          <PlusCircle size={18} strokeWidth={3} />
                         </div>
-                        <h3 className="text-2xl font-black text-white tracking-tighter uppercase">
-                          {editingTestimonial?.id ? "Editar Feedback" : "Novo Feedback"}
+                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase">
+                          {editingTestimonial?.id ? "Editar feedback" : "Novo feedback"}
                         </h3>
                       </div>
 
-                      <form onSubmit={saveTestimonial} className="space-y-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Nome do Cliente</label>
-                          <input 
-                            type="text" 
+                      <form onSubmit={saveTestimonial} className="space-y-5">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Nome do cliente</label>
+                          <input
+                            type="text"
                             required
                             placeholder="Ex: João Silva"
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-black text-white"
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-black text-white placeholder:text-white/20 text-sm"
                             value={editingTestimonial?.name || ""}
                             onChange={e => setEditingTestimonial(prev => ({ ...prev, name: e.target.value }))}
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Comentário</label>
-                          <textarea 
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Comentário</label>
+                          <textarea
                             required
                             rows={4}
                             placeholder="Descreva o feedback..."
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white resize-none"
+                            className="w-full p-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-medium text-white placeholder:text-white/20 resize-none text-sm leading-relaxed"
                             value={editingTestimonial?.comment || ""}
                             onChange={e => setEditingTestimonial(prev => ({ ...prev, comment: e.target.value }))}
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Avaliação (1-5)</label>
-                          <div className="flex items-center gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Avaliação</label>
+                          <div className="flex items-center gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
                                 key={star}
                                 type="button"
                                 onClick={() => setEditingTestimonial(prev => ({ ...prev, rating: star }))}
-                                className={`p-2 transition-all ${editingTestimonial?.rating && editingTestimonial.rating >= star ? 'text-pizza-cheese' : 'text-white/10'}`}
+                                className={`p-1.5 rounded-lg transition-colors ${editingTestimonial?.rating && editingTestimonial.rating >= star ? 'text-pizza-cheese' : 'text-white/15 hover:text-white/40'}`}
+                                aria-label={`${star} estrela${star > 1 ? "s" : ""}`}
                               >
-                                <Star size={32} fill={editingTestimonial?.rating && editingTestimonial.rating >= star ? 'currentColor' : 'none'} strokeWidth={3} />
+                                <Star size={26} fill={editingTestimonial?.rating && editingTestimonial.rating >= star ? 'currentColor' : 'none'} strokeWidth={2.5} />
                               </button>
                             ))}
                           </div>
@@ -2349,22 +2272,22 @@ export default function App() {
                           folder="testimonials"
                         />
 
-                        <div className="pt-6 flex gap-4">
-                          {editingTestimonial && (
-                            <button 
+                        <div className="pt-2 flex gap-2">
+                          {editingTestimonial?.id && (
+                            <button
                               type="button"
                               onClick={() => setEditingTestimonial(null)}
-                              className="flex-1 bg-white/5 text-white/40 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                              className="h-12 px-5 bg-white/5 text-white/70 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-white/10 hover:text-white transition-colors border border-white/5"
                             >
                               Cancelar
                             </button>
                           )}
-                          <button 
+                          <button
                             type="submit"
                             disabled={isSaving}
-                            className="flex-[2] bg-pizza-red text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-pizza-red/90 transition-all shadow-2xl shadow-pizza-red/30 disabled:opacity-50 flex items-center justify-center gap-3"
+                            className="flex-1 h-12 bg-pizza-red text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-pizza-red/90 transition-colors shadow-lg shadow-pizza-red/20 disabled:opacity-50 flex items-center justify-center gap-2"
                           >
-                            {isSaving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} strokeWidth={3} /> {editingTestimonial?.id ? "Atualizar" : "Salvar"}</>}
+                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <><Save size={16} strokeWidth={3} /> {editingTestimonial?.id ? "Atualizar" : "Salvar"}</>}
                           </button>
                         </div>
                       </form>
@@ -2372,175 +2295,188 @@ export default function App() {
                   </div>
 
                   {/* Testimonials List Column */}
-                  <div className="xl:col-span-7">
-                    <div className="space-y-6">
+                  <div className="lg:col-span-7">
+                    <div className="bg-pizza-card rounded-2xl border border-white/5 overflow-hidden">
+                      <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                        <h3 className="text-sm md:text-base font-display font-black text-white uppercase tracking-wider">Feedbacks</h3>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest tabular-nums">
+                          {testimonials.length} itens
+                        </span>
+                      </div>
                       {testimonials.length === 0 ? (
-                        <div className="bg-pizza-card p-20 rounded-[3rem] border border-dashed border-white/10 text-center">
-                          <p className="text-white/20 font-black uppercase tracking-widest">Nenhum feedback cadastrado</p>
+                        <div className="px-6 py-16 text-center">
+                          <p className="text-white/30 font-black uppercase tracking-widest text-xs">Nenhum feedback cadastrado</p>
                         </div>
                       ) : (
-                        testimonials.map((t) => (
-                          <motion.div 
-                            layout
-                            key={t.id}
-                            className="bg-pizza-card p-6 md:p-8 rounded-[2.5rem] border border-white/5 flex items-center gap-6 group hover:border-pizza-red/30 transition-all duration-500"
-                          >
-                            <img 
-                              src={t.avatar || "https://i.pravatar.cc/150?u=default"} 
-                              alt={t.name} 
-                              className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/10 object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-white font-black text-lg md:text-xl tracking-tight truncate">{t.name}</h4>
-                                <div className="flex items-center gap-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star key={star} size={12} fill={t.rating >= star ? '#FFC700' : 'none'} className={t.rating >= star ? 'text-pizza-cheese' : 'text-white/10'} />
-                                  ))}
+                        <ul className="divide-y divide-white/5">
+                          {testimonials.map((t: Testimonial) => (
+                            <li key={t.id} className="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                              <img
+                                src={t.avatar || "https://i.pravatar.cc/150?u=default"}
+                                alt={t.name}
+                                className="w-12 h-12 rounded-full border border-white/10 object-cover shrink-0"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-white font-black text-sm tracking-tight truncate">{t.name}</h4>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        size={11}
+                                        fill={t.rating >= star ? 'currentColor' : 'none'}
+                                        className={t.rating >= star ? 'text-pizza-cheese' : 'text-white/15'}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
+                                <p className="text-white/50 text-xs leading-relaxed line-clamp-2">"{t.comment}"</p>
                               </div>
-                              <p className="text-white/40 text-sm md:text-base italic line-clamp-2">"{t.comment}"</p>
-                            </div>
-                            <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                              <button 
-                                onClick={() => setEditingTestimonial(t)}
-                                className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-pizza-red hover:text-white transition-all"
-                                title="Editar"
-                              >
-                                <Edit size={18} strokeWidth={3} />
-                              </button>
-                              <button 
-                                onClick={() => deleteTestimonial(t.id)}
-                                className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                                title="Excluir"
-                              >
-                                <Trash2 size={18} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </motion.div>
-                        ))
+                              <div className="flex gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTestimonial(t)}
+                                  className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-white/70 hover:bg-pizza-red hover:text-white transition-colors border border-white/5"
+                                  title="Editar"
+                                  aria-label={`Editar feedback de ${t.name}`}
+                                >
+                                  <Edit size={15} strokeWidth={2.5} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteTestimonial(t.id)}
+                                  className="w-9 h-9 rounded-lg bg-pizza-red/10 text-pizza-red hover:bg-pizza-red hover:text-white transition-colors border border-pizza-red/20 flex items-center justify-center"
+                                  title="Excluir"
+                                  aria-label={`Excluir feedback de ${t.name}`}
+                                >
+                                  <Trash2 size={15} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
                   </div>
                 </motion.div>
               ) : (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="max-w-2xl mx-auto"
+                  className="max-w-3xl mx-auto w-full"
                 >
-                  <div className="bg-pizza-card p-10 rounded-[3rem] shadow-2xl border border-white/5">
-                    <h2 className="text-3xl font-display font-black text-white tracking-tighter mb-10 flex items-center gap-4 uppercase">
-                      <div className="w-12 h-12 bg-pizza-dark rounded-2xl flex items-center justify-center text-pizza-red border border-white/5">
-                        <Settings size={24} strokeWidth={3} />
+                  <div className="bg-pizza-card p-6 md:p-8 rounded-2xl border border-white/5">
+                    <h2 className="text-xl md:text-2xl font-display font-black text-white tracking-tighter mb-6 flex items-center gap-3 uppercase">
+                      <div className="w-10 h-10 bg-pizza-dark rounded-xl flex items-center justify-center text-pizza-red border border-white/5 shrink-0">
+                        <Settings size={18} strokeWidth={3} />
                       </div>
-                      Configurações da Pizzaria
+                      Configurações
                     </h2>
 
                     {adminError && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="p-4 bg-pizza-red/10 text-pizza-red rounded-2xl text-center font-black text-xs uppercase tracking-widest border border-pizza-red/20 mb-8"
+                        className="p-3 bg-pizza-red/10 text-pizza-red rounded-xl text-center font-black text-[11px] uppercase tracking-widest border border-pizza-red/20 mb-5"
                       >
                         {adminError}
                       </motion.div>
                     )}
-                    
-                    <form onSubmit={saveStoreSettings} className="space-y-8">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Nome da Pizzaria</label>
-                          <input 
-                            type="text" 
+
+                    <form onSubmit={saveStoreSettings} className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Nome da loja</label>
+                          <input
+                            type="text"
                             required
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-black text-white"
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-black text-white text-sm"
                             value={editingStoreInfo?.name || ""}
                             onChange={e => setEditingStoreInfo(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">WhatsApp de Vendas</label>
-                          <input 
-                            type="text" 
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">WhatsApp de vendas</label>
+                          <input
+                            type="text"
                             required
                             placeholder="5547999999999"
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-black text-white"
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-black text-white placeholder:text-white/20 text-sm tabular-nums"
                             value={editingStoreInfo?.whatsapp || ""}
                             onChange={e => setEditingStoreInfo(prev => prev ? ({ ...prev, whatsapp: e.target.value }) : null)}
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Endereço Físico</label>
-                        <input 
-                          type="text" 
-                          className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white"
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Endereço físico</label>
+                        <input
+                          type="text"
+                          className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-bold text-white text-sm"
                           value={editingStoreInfo?.address || ""}
                           onChange={e => setEditingStoreInfo(prev => prev ? ({ ...prev, address: e.target.value }) : null)}
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Horário de Funcionamento</label>
-                          <input 
-                            type="text" 
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white"
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Horário</label>
+                          <input
+                            type="text"
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-bold text-white text-sm"
                             value={editingStoreInfo?.openingHours || ""}
                             onChange={e => setEditingStoreInfo(prev => prev ? ({ ...prev, openingHours: e.target.value }) : null)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-2">Status Atual</label>
-                          <select 
-                            className="w-full p-5 bg-pizza-dark border-2 border-white/5 rounded-2xl outline-none focus:border-pizza-red transition-all font-bold text-white appearance-none cursor-pointer"
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] block">Status</label>
+                          <select
+                            className="w-full h-12 px-4 bg-pizza-dark border border-white/10 rounded-xl outline-none focus:border-pizza-red focus:ring-2 focus:ring-pizza-red/20 transition-all font-bold text-white appearance-none cursor-pointer text-sm"
                             value={editingStoreInfo?.status || ""}
                             onChange={e => setEditingStoreInfo(prev => prev ? ({ ...prev, status: e.target.value }) : null)}
                           >
-                            <option value="Aberto" className="bg-pizza-card">Aberto</option>
+                            <option value="Aberto agora" className="bg-pizza-card">Aberto agora</option>
                             <option value="Fechado" className="bg-pizza-card">Fechado</option>
                             <option value="Em breve" className="bg-pizza-card">Em breve</option>
                           </select>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <ImageUpload 
-                          label="Logo da Marca"
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUpload
+                          label="Logo"
                           currentImage={editingStoreInfo?.logo}
                           onUpload={url => setEditingStoreInfo(prev => prev ? ({ ...prev, logo: url }) : null)}
                           folder="store"
                         />
-                        <ImageUpload 
-                          label="Banner da Loja"
+                        <ImageUpload
+                          label="Banner"
                           currentImage={editingStoreInfo?.banner}
                           onUpload={url => setEditingStoreInfo(prev => prev ? ({ ...prev, banner: url }) : null)}
                           folder="store"
                         />
                       </div>
 
-                      <div className="pt-6">
+                      <div className="pt-2">
                         {saveSuccess && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="p-4 bg-green-500/10 text-green-500 rounded-2xl text-center font-black text-xs uppercase tracking-widest border border-green-500/20 mb-6"
+                            className="p-3 bg-green-500/10 text-green-500 rounded-xl text-center font-black text-[11px] uppercase tracking-widest border border-green-500/20 mb-4"
                           >
-                            Configurações atualizadas!
+                            Configurações salvas!
                           </motion.div>
                         )}
-                        <button 
+                        <button
                           type="submit"
                           disabled={isSaving}
-                          className="w-full bg-pizza-red text-white py-6 rounded-[2rem] font-black uppercase tracking-widest hover:bg-pizza-red/90 transition-all shadow-2xl shadow-pizza-red/30 disabled:opacity-50 flex items-center justify-center gap-3 text-lg"
+                          className="w-full h-12 bg-pizza-red text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-pizza-red/90 transition-colors shadow-lg shadow-pizza-red/20 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           {isSaving ? (
-                            <Loader2 className="animate-spin" size={24} />
+                            <Loader2 className="animate-spin" size={18} />
                           ) : (
-                            <><Save size={24} strokeWidth={3} /> Salvar Alterações</>
+                            <><Save size={16} strokeWidth={3} /> Salvar alterações</>
                           )}
                         </button>
                       </div>
@@ -2563,29 +2499,29 @@ export default function App() {
                 onClick={() => setProductToDelete(null)}
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               />
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl"
+                className="relative w-full max-w-sm bg-pizza-card rounded-3xl p-8 shadow-2xl border border-white/5"
               >
-                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
-                  <Trash2 size={24} />
+                <div className="w-14 h-14 bg-pizza-red/10 text-pizza-red rounded-2xl flex items-center justify-center mb-5 mx-auto border border-pizza-red/20">
+                  <Trash2 size={26} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-stone-800 text-center mb-2">Excluir Produto?</h3>
-                <p className="text-stone-500 text-center text-sm mb-6">
-                  Esta ação não pode ser desfeita. O produto será removido permanentemente da sua loja.
+                <h3 className="text-xl font-black text-white text-center mb-2 uppercase tracking-tight">Excluir produto?</h3>
+                <p className="text-white/50 text-center text-sm mb-8 leading-relaxed">
+                  Esta ação não pode ser desfeita. O produto será removido do cardápio.
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setProductToDelete(null)}
-                    className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition-colors"
+                    className="flex-1 py-4 bg-white/5 text-white/70 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white/10 hover:text-white transition-colors border border-white/5"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={() => deleteProduct(productToDelete)}
-                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors"
+                    className="flex-1 py-4 bg-pizza-red text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-pizza-red/90 transition-colors shadow-lg shadow-pizza-red/30"
                   >
                     Excluir
                   </button>
@@ -2617,7 +2553,7 @@ export default function App() {
                 </div>
                 <h3 className="text-lg font-bold text-stone-800 text-center mb-2">Resetar cardápio?</h3>
                 <p className="text-stone-500 text-center text-sm mb-6">
-                  Todos os produtos atuais serão apagados e o cardápio padrão de pizzas será recarregado. Esta ação não pode ser desfeita.
+                  Todos os produtos atuais serão apagados e o cardápio padrão será recarregado. Esta ação não pode ser desfeita.
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -2673,11 +2609,24 @@ export default function App() {
       {/* Header Fixo */}
       <header className="fixed top-0 left-0 right-0 z-[100] bg-pizza-dark/80 backdrop-blur-xl border-b border-white/5 px-4 py-3 md:px-12 md:py-6 flex items-center justify-between">
         <div className="flex items-center gap-3 md:gap-4">
-          <div className="w-9 h-9 md:w-12 md:h-12 bg-pizza-red rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-pizza-red/20 rotate-3 group-hover:rotate-0 transition-transform">
-            <span className="font-display font-black text-lg md:text-xl">B</span>
+          <div className="w-9 h-9 md:w-12 md:h-12 bg-pizza-red rounded-xl md:rounded-2xl flex items-center justify-center overflow-hidden shadow-lg shadow-pizza-red/20 rotate-3 hover:rotate-0 transition-transform p-1.5 md:p-2">
+            {storeInfo.logo ? (
+              <img
+                src={storeInfo.logo}
+                alt={storeInfo.name}
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="font-display font-black text-lg md:text-xl text-white">
+                {storeInfo.name.charAt(0)}
+              </span>
+            )}
           </div>
           <div className="flex flex-col">
-            <h1 className="font-display font-black text-white text-lg md:text-2xl tracking-tighter leading-none">Bella Massa</h1>
+            <h1 className="font-display font-black text-white text-lg md:text-2xl tracking-tighter leading-none">
+              {storeInfo.name}
+            </h1>
             <div className="flex items-center gap-1 text-white/40 text-[9px] md:text-xs mt-0.5 font-bold uppercase tracking-widest">
               <MapPin size={10} className="text-pizza-red" />
               <span className="truncate max-w-[120px] md:max-w-none">Entregando em {selectedCity || "Timbó"}</span>
@@ -2705,23 +2654,8 @@ export default function App() {
           {/* Background Blob */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] aspect-square bg-pizza-red/5 rounded-full blur-[80px] md:blur-[120px] -z-10" />
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-4 md:gap-8"
+          <div className="flex flex-col items-center gap-4 md:gap-8 animate-[fadeInUp_0.5s_ease-out_both]"
           >
-            {/* Frete Grátis Badge */}
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-pizza-red text-white px-6 py-2.5 md:px-10 md:py-4 rounded-full flex items-center gap-2 md:gap-3 shadow-2xl shadow-pizza-red/20 border border-white/10"
-            >
-              <TrendingUp size={14} md:size={20} strokeWidth={3} />
-              <span className="text-[10px] md:text-sm font-black uppercase tracking-[0.2em]">
-                Frete Grátis para {selectedCity || "Timbó"}
-              </span>
-            </motion.div>
-
             {/* Main Headline */}
             <h1 className="text-5xl md:text-9xl font-serif font-black text-white tracking-tighter leading-[0.85] drop-shadow-2xl">
               Os mais pedidos <br />
@@ -2730,7 +2664,7 @@ export default function App() {
 
             {/* Subheadline */}
             <p className="text-white/60 font-bold text-xs md:text-xl tracking-tight uppercase tracking-[0.1em]">
-              Feitos hoje • Entrega rápida • Amor em cada pedaço
+              Feitos na hora • Entrega rápida • Sabor em cada mordida
             </p>
 
             {/* Social Proof Pill */}
@@ -2739,9 +2673,11 @@ export default function App() {
                 {[1, 2, 3].map((i) => (
                   <img 
                     key={i}
-                    src={`https://i.pravatar.cc/100?img=${i + 10}`} 
+                    src={`https://i.pravatar.cc/100?img=${i + 10}`}
                     className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-pizza-dark object-cover"
                     alt="User"
+                    loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                   />
                 ))}
@@ -2750,22 +2686,16 @@ export default function App() {
                 +43 pedidos hoje
               </span>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Store Profile Card (Matching Image Layout) */}
         <section className="px-4 md:px-6 mb-16 md:mb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="max-w-2xl mx-auto bg-pizza-card rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] text-center relative overflow-hidden border border-white/5"
+          <div
+            className="max-w-2xl mx-auto bg-pizza-card rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] text-center relative overflow-hidden border border-white/5 animate-[fadeInUp_0.6s_ease-out_0.2s_both]"
           >
             {/* Logo Container */}
-            <motion.div 
-              initial={{ scale: 0.8, rotate: -5 }}
-              animate={{ scale: 1, rotate: 0 }}
-              className="w-24 h-24 md:w-40 md:h-40 bg-pizza-dark rounded-3xl md:rounded-[3rem] shadow-2xl mx-auto mb-6 md:mb-10 p-4 md:p-8 flex items-center justify-center border border-white/5 relative"
+            <div className="w-24 h-24 md:w-40 md:h-40 bg-pizza-dark rounded-3xl md:rounded-[3rem] shadow-2xl mx-auto mb-6 md:mb-10 p-4 md:p-8 flex items-center justify-center border border-white/5 relative"
             >
               <img 
                 src={storeInfo.logo} 
@@ -2776,7 +2706,7 @@ export default function App() {
               <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-pizza-red text-white w-6 h-6 md:w-10 md:h-10 rounded-lg md:rounded-2xl flex items-center justify-center shadow-xl border-2 md:border-4 border-pizza-dark">
                 <Check size={12} md:size={20} strokeWidth={3} />
               </div>
-            </motion.div>
+            </div>
 
             {/* Store Name */}
             <h2 className="text-3xl md:text-6xl font-display font-black text-white mb-4 md:mb-8 tracking-tighter leading-none">
@@ -2833,7 +2763,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Lista de Produtos Premium */}
@@ -2846,7 +2776,7 @@ export default function App() {
                   {activeCategory === 'all' ? 'Destaques do Dia' : categories.find(c => c.id === activeCategory)?.name}
                 </h3>
               </div>
-              <p className="text-white/20 font-bold uppercase tracking-[0.2em] text-[9px] md:text-xs ml-3.5 md:ml-5">Sabor inigualável em cada fatia</p>
+              <p className="text-white/20 font-bold uppercase tracking-[0.2em] text-[9px] md:text-xs ml-3.5 md:ml-5">Sabor inigualável em cada mordida</p>
             </div>
             <div className="flex items-center gap-4 bg-pizza-card p-3 md:p-4 rounded-2xl md:rounded-[2rem] shadow-sm border border-white/5">
               <div className="flex items-center gap-2 text-white/60 text-[10px] md:text-sm font-black uppercase tracking-widest">
@@ -2862,18 +2792,16 @@ export default function App() {
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-8">
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setModalQuantity(1);
-                  }} 
-                />
-              ))}
-            </AnimatePresence>
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setModalQuantity(1);
+                }}
+              />
+            ))}
           </div>
 
           {filteredProducts.length === 0 && (
@@ -2908,17 +2836,18 @@ export default function App() {
 
             <div className="flex overflow-x-auto pb-12 gap-4 md:gap-8 snap-x no-scrollbar px-4">
               {testimonials.map((testimonial) => (
-                <motion.div
+                <div
                   key={testimonial.id}
-                  whileHover={{ y: -8, borderColor: 'rgba(255, 92, 0, 0.3)' }}
-                  className="flex-shrink-0 w-[300px] md:w-[450px] bg-pizza-card p-8 md:p-10 rounded-[2.5rem] border border-white/5 snap-center shadow-2xl transition-all duration-500"
+                  className="flex-shrink-0 w-[300px] md:w-[450px] bg-pizza-card p-8 md:p-10 rounded-[2.5rem] border border-white/5 snap-center shadow-2xl hover:-translate-y-2 hover:border-pizza-orange/30 transition-all duration-300"
                 >
                   <div className="flex items-center gap-5 mb-6 md:mb-8">
                     <div className="relative">
                       <img 
-                        src={testimonial.avatar || "https://i.pravatar.cc/150?u=default"} 
-                        alt={testimonial.name} 
+                        src={testimonial.avatar || "https://i.pravatar.cc/150?u=default"}
+                        alt={testimonial.name}
                         className="w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-pizza-orange/50 object-cover p-1"
+                        loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute -bottom-1 -right-1 bg-pizza-orange text-white w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center shadow-lg border-2 border-pizza-card">
@@ -2937,7 +2866,7 @@ export default function App() {
                   <p className="text-white/50 text-sm md:text-lg font-medium leading-relaxed italic">
                     "{testimonial.comment}"
                   </p>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -2949,7 +2878,7 @@ export default function App() {
             Clientes em {selectedCity || "Timbó"} estão pedindo agora
           </p>
           <p className="text-pizza-red font-display font-black text-lg md:text-2xl uppercase tracking-tighter">
-            Uma das pizzarias mais bem avaliadas da região
+            Uma das hamburguerias mais bem avaliadas da região
           </p>
         </div>
 
@@ -2997,15 +2926,16 @@ export default function App() {
 
       {/* Carrinho Fixo Premium (Bottom) */}
       <AnimatePresence>
-        {cartCount > 0 && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-[90] p-6 md:p-10 bg-gradient-to-t from-pizza-cream via-pizza-cream/90 to-transparent pointer-events-none"
+        {cartCount > 0 && !isCartOpen && !isCheckoutOpen && !selectedProduct && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className="fixed bottom-6 left-4 right-4 md:bottom-10 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-lg z-[90]"
           >
-            <div className="max-w-lg mx-auto pointer-events-auto">
-              <button 
+            <div>
+              <button
                 onClick={() => setIsCartOpen(true)}
                 className="w-full bg-pizza-dark text-white py-6 px-10 rounded-[2.5rem] font-black uppercase tracking-widest shadow-2xl shadow-pizza-dark/40 flex items-center justify-between group active:scale-95 transition-all relative overflow-hidden"
               >
@@ -3170,36 +3100,6 @@ export default function App() {
         onSendWhatsApp={sendWhatsAppOrder}
       />
 
-      {/* Botão Flutuante do Carrinho (Mobile) */}
-      <AnimatePresence>
-        {cartCount > 0 && !isCartOpen && !isCheckoutOpen && !selectedProduct && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-4 right-4 z-[90] md:hidden"
-          >
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="w-full bg-pizza-dark text-white p-5 rounded-[2rem] shadow-2xl shadow-pizza-dark/40 flex items-center justify-between group active:scale-95 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-pizza-red rounded-2xl flex items-center justify-center shadow-lg">
-                  <ShoppingBag size={24} strokeWidth={3} />
-                </div>
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Ver Carrinho</span>
-                  <span className="text-lg font-display font-black tracking-tighter">{cartCount} {cartCount === 1 ? 'item' : 'itens'}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xl font-display font-black tracking-tighter">{cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                <ChevronRight size={20} strokeWidth={3} className="text-pizza-red" />
-              </div>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
       </div>
     </ErrorBoundary>
   );
